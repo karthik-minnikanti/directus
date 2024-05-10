@@ -88,6 +88,18 @@
 				<v-text-overflow :text="t('login')" />
 			</v-list-item-content>
 		</v-list-item>
+		<v-list-item
+			clickable
+			:active="filterField === 'action' && filterValue === 'logout'"
+			@click="setNavFilter('action', 'logout')"
+		>
+			<v-list-item-icon>
+				<v-icon name="logout" />
+			</v-list-item-icon>
+			<v-list-item-content>
+				<v-text-overflow :text="t('logout')" />
+			</v-list-item-content>
+		</v-list-item>
 	</v-list>
 </template>
 

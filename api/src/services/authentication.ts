@@ -402,7 +402,7 @@ export class AuthenticationService {
 		};
 	}
 
-	async logout(refreshToken: string): Promise<void> {
+	async logout(refreshToken: string): Promise<string> {
 		const record = await this.knex
 			.select<User & Session>(
 				'u.id',
@@ -428,7 +428,10 @@ export class AuthenticationService {
 			await provider.logout(clone(user));
 
 			await this.knex.delete().from('directus_sessions').where('token', refreshToken);
+			return record.id
 		}
+
+		return '';
 	}
 
 	async verifyPassword(userID: string, password: string): Promise<void> {
