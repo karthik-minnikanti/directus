@@ -12,6 +12,9 @@
 			<v-button v-tooltip.bottom="t('create_role')" rounded icon :to="addNewLink">
 				<v-icon name="add" />
 			</v-button>
+			<v-button v-tooltip.bottom="t('Export')" rounded icon @click="exportDataFiles">
+				<v-icon name="start" />
+			</v-button>
 		</template>
 
 		<template #navigation>
@@ -66,6 +69,7 @@ import { useRouter } from 'vue-router';
 import { unexpectedError } from '@/utils/unexpected-error';
 import { translate } from '@/utils/translate-object-values';
 import { Role } from '@directus/types';
+import { notify } from '@/utils/notify';
 
 type RoleItem = Partial<Role> & {
 	count?: number;
@@ -129,7 +133,38 @@ export default defineComponent({
 			return `/settings/roles/+`;
 		});
 
-		return { t, loading, roles, tableHeaders, addNewLink, navigateToRole };
+		async function exportDataFiles() {
+			loading.value = true;
+
+			try {
+				await api.post(`/utils/export/directus_permissions`, {
+					query: {
+						limit: 25000,
+						filter: null,
+						search: null,
+						fields: ['id', 'role', 'collection', 'action', 'permissions', 'fields'],
+						sort: ['id'],
+					},
+					deep: {
+						role: {
+							_fields: ['name'],
+						},
+					},
+					format: 'csv',
+					file: {},
+				});
+			} catch (err: any) {
+				unexpectedError(err);
+			} finally {
+				loading.value = false;
+			}
+
+			notify({
+				title: 'Exported file will be available for download after processing',
+			});
+		}
+
+		return { t, loading, roles, tableHeaders, addNewLink, navigateToRole, exportDataFiles };
 
 		async function fetchRoles() {
 			loading.value = true;

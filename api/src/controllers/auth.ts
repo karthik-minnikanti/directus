@@ -131,7 +131,7 @@ router.post(
 			throw new InvalidPayloadException(`"refresh_token" is required in either the JSON payload or Cookie`);
 		}
 
-		await authenticationService.logout(currentRefreshToken);
+		const userId = await authenticationService.logout(currentRefreshToken);
 
 		if (req.cookies[env['REFRESH_TOKEN_COOKIE_NAME']]) {
 			res.clearCookie(env['REFRESH_TOKEN_COOKIE_NAME'], {
@@ -139,6 +139,17 @@ router.post(
 				domain: env['REFRESH_TOKEN_COOKIE_DOMAIN'],
 				secure: env['REFRESH_TOKEN_COOKIE_SECURE'] ?? false,
 				sameSite: (env['REFRESH_TOKEN_COOKIE_SAME_SITE'] as 'lax' | 'strict' | 'none') || 'strict',
+			});
+		}
+
+		if (userId) {
+			await authenticationService.activityService.createOne({
+				action: 'logout',
+				user: userId,
+				collection: 'directus_users',
+				item: userId,
+				ip: getIPFromReq(req),
+				accountability: accountability,
 			});
 		}
 
