@@ -142,7 +142,7 @@ export default defineComponent({
 						limit: 25000,
 						filter: null,
 						search: null,
-						fields: ['id', 'role', 'collection', 'action', 'permissions', 'fields'],
+						fields: ['id', 'role', 'collection', 'action', 'permissions'],
 						sort: ['id'],
 					},
 					deep: {
