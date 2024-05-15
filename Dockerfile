@@ -3,12 +3,15 @@
 ####################################################################################################
 ## Build Packages
 
-FROM node:18-alpine AS builder
+FROM node:18-alpine3.18 AS builder
 WORKDIR /directus
+
+RUN apk add --no-cache --virtual .build-deps build-base python3
 
 ENV NODE_OPTIONS=--max-old-space-size=8192
 
 COPY package.json .
+RUN npm rebuild --arch=x64 --platform=linux --libc=musl sharp
 RUN corepack enable && corepack prepare
 
 COPY pnpm-lock.yaml .
@@ -30,7 +33,7 @@ RUN : \
 ####################################################################################################
 ## Create Production Image
 
-FROM node:18-alpine AS runtime
+FROM node:18-alpine3.18 AS runtime
 
 USER node
 
