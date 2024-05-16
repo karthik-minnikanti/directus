@@ -1,0 +1,168 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+name: ${{ parameters.packages }}_$(date:yyyyMMdd)$(rev:.r)
+
+# A pipeline with no CI trigger
+trigger: none
+
+pool:
+  name: 811Pool #Unix Build #
+  # demands:
+  #  - agent.name -equals KMBLAgent  
+# resources:
+# - repo: self
+parameters:
+- name: packages
+  displayName: Package name
+  type: string
+  #default: ubuntu-latest
+  values:
+  - kotak811-directus
+  
+variables:
+- group: AWS-keys-UAT
+- group: AWS-reference-keys-UAT
+- group: Kotak-ECR-Credentials-UAT
+- group: AWS-keys-PRODUCT
+- group: Kotak-ECR-Credentials-PRODUCT
+- name: appName
+  value: $(Build.DefinitionName)
+- name: imageName
+  value: $(appName)
+- name: REPO_NAME
+  value: 'cloudacqui/${{ parameters.packages }}'  
+  #isMaster: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
+  #sharedScripts: '$(Build.SourcesDirectory)/shared/scripts'
+- name:  tag
+  value: '$(appName)-$(Build.BuildId).$(Build.DefinitionVersion)'
+- name:  workingDir
+  value: '.'
+#- name:  APP_NAME
+#  value: $(DOCKER_REPOSITORY_NAME)
+- name: AWS_CREDENTIAL
+  value: 'KOTAK-811-NON-PROD-SERVICE'
+- name:  DOCKER_BUILDKIT
+  value: 1
+- name:  DOCKER_REPOSITORY
+  value: '$(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(REPO_NAME)'
+- name:  PROD_REPOSITORY
+  value: '$(PROD_ACCOUNT).dkr.ecr.$(PROD_REGION).amazonaws.com/$(REPO_NAME)'
+
+stages:
+- stage: Build
+  displayName: Build code
+  jobs:
+  - job: Build
+    displayName: Build
+    steps:
+    - task: Bash@3
+      #condition: and(succeeded(), eq(variables.isDev, 'true'))
+      displayName: create repo in ECR
+      inputs:
+        targetType: 'inline'
+        script: |
+          var=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout|cut -b -5)
+          tag=`echo "v"-$(Build.BuildId)`
+          echo "##vso[task.setvariable variable=tag]$tag"
+          echo $tag 
+          export AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID)
+          export AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)
+          export AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)
+          #aws ecr create-repository --repository-name $(REPO_NAME) --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true --region $(AWS_DEFAULT_REGION)
+          #aws ecr set-repository-policy --repository-name $(REPO_NAME) --policy-text file://Policy/ecr-permissions-policy.json --region $(AWS_DEFAULT_REGION)          
+        
+
+    - task: Docker@2
+      #condition: and(succeeded(), eq(variables.isMaster, 'true'))
+      displayName: Docker Build
+      inputs:
+        repository: $(DOCKER_REPOSITORY)
+        command: 'build'
+        Dockerfile: '$(Build.SourcesDirectory)/$(workingDir)/Dockerfile'
+        buildContext: '$(Build.SourcesDirectory)/$(workingDir)'
+        imageName: '$(imageName)'
+        tags: |
+          $(tag)
+        arguments: --no-cache --build-arg SERVICE_NAME=${{ parameters.packages }}
+         
+    - task: ECRPushImage@1
+      #condition: and(succeeded(), eq(variables.isMaster, 'true'))
+      displayName: Docker Push
+      inputs:
+        awsCredentials: '$(AWS_CREDENTIAL)'
+        #regionName: '$(AWS-DEFAULT-REGION)'
+        regionName: 'ap-south-1'
+        imageSource: 'imagename'
+        sourceImageName: '$(DOCKER_REPOSITORY)'
+        sourceImageTag: '$(tag)'
+        repositoryName: '$(REPO_NAME)'
+        pushTag: '$(tag)'
+        autoCreateRepository: true    
+
+    - task: PublishBuildArtifacts@1
+      #condition: and(succeeded(), eq(variables.isdevelop, 'true'))
+      displayName: 'Publish Artifact: TagFile'
+      inputs:
+         PathtoPublish: '$(workingDir)/'
+         ArtifactName: TagFile
+
+
+- stage: PRODBuild
+  displayName: PRODBuild code
+  jobs:
+  - job: Build
+    displayName: PRODBuild
+    steps:
+    - task: Bash@3
+      #condition: and(succeeded(), eq(variables.isDev, 'true'))
+      displayName: create repo in ECR
+      inputs:
+        targetType: 'inline'
+        script: |
+          var=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout|cut -b -5)
+          tag=`echo "v"-$(Build.BuildId)PROD`
+          echo "##vso[task.setvariable variable=tag]$tag"
+          echo $tag 
+          export AWS_ACCESS_KEY_ID=$(AWS-ACCESS-KEY-ID-PROD)
+          export AWS_DEFAULT_REGION=$(AWS-DEFAULT-REGION-PROD)
+          export AWS_SECRET_ACCESS_KEY=$(AWS-SECRET-ACCESS-KEY-PROD)
+          #aws ecr create-repository --repository-name $(REPO_NAME) --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true --region $(AWS_DEFAULT_REGION)
+          #aws ecr set-repository-policy --repository-name $(REPO_NAME) --policy-text file://Policy/ecr-permissions-policy.json --region $(AWS_DEFAULT_REGION)          
+        
+
+    - task: Docker@2
+      #condition: and(succeeded(), eq(variables.isMaster, 'true'))
+      displayName: Docker Build
+      inputs:
+        repository: $(PROD_REPOSITORY)
+        command: 'build'
+        Dockerfile: '$(Build.SourcesDirectory)/$(workingDir)/Dockerfile'
+        buildContext: '$(Build.SourcesDirectory)/$(workingDir)'
+        imageName: '$(imageName)'
+        tags: |
+          $(tag)
+        arguments: --no-cache --build-arg SERVICE_NAME=${{ parameters.packages }}
+         
+    - task: AmazonWebServices.aws-vsts-tools.ECRPushImage.ECRPushImage@1
+      #condition: and(succeeded(), eq(variables.isMaster, 'true'))
+      displayName: Docker Push
+      inputs:
+        awsCredentials: 'KOTAK-811-PROD-SERVICE'
+        #regionName: '$(AWS-DEFAULT-REGION)'
+        regionName: 'ap-south-1'
+        imageSource: 'imagename'
+        sourceImageName: '$(PROD_REPOSITORY)'
+        sourceImageTag: '$(tag)'
+        repositoryName: '$(REPO_NAME)'
+        pushTag: '$(tag)'
+        autoCreateRepository: true    
+
+    - task: PublishBuildArtifacts@1
+      #condition: and(succeeded(), eq(variables.isdevelop, 'true'))
+      displayName: 'Publish Artifact: TagFile'
+      inputs:
+         PathtoPublish: '$(workingDir)/'
+         ArtifactName: TagFile         
