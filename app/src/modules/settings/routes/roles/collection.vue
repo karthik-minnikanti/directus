@@ -147,7 +147,7 @@ export default defineComponent({
 					},
 					deep: {
 						role: {
-							_fields: ['name'],
+							_fields: ['*'],
 						},
 					},
 					format: 'csv',
