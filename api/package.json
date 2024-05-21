@@ -1,6 +1,6 @@
 {
 	"name": "@karthik_minnikanti/directus",
-	"version": "0.1",
+	"version": "9.26.10",
 	"description": "Directus is a real-time API and App dashboard for managing SQL database content",
 	"type": "module",
 	"keywords": [
