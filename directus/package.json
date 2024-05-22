@@ -1,6 +1,6 @@
 {
 	"name": "directus",
-	"version": "9.26.15",
+	"version": "9.26.16",
 	"description": "Directus is a real-time API and App dashboard for managing SQL database content",
 	"type": "module",
 	"keywords": [
@@ -56,7 +56,7 @@
 		"modified-directus": "cli.js"
 	},
 	"dependencies": {
-		"@kaerhik_minnikanti/directus": "workspace:*"
+		"@karthik_minnikanti/directus": "workspace:*"
 	},
 	"engines": {
 		"node": ">=18.0.0"
