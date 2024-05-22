@@ -805,7 +805,7 @@ importers:
 
   directus:
     dependencies:
-      '@directus/api':
+      '@kaerhik_minnikanti/directus':
         specifier: workspace:*
         version: link:../api
 
