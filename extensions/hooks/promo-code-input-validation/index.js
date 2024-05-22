@@ -1,6 +1,5 @@
+
 // @ts-nocheck
-
-
 module.exports = function registerHook({ filter }, { services, getSchema, exceptions }) {
     const { InvalidPayloadException } = exceptions;
     const { ItemsService } = services

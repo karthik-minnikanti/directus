@@ -1,4 +1,3 @@
-// @ts-nocheck
 function registerHook({ action }, { services, getSchema, logger }) {
   const { ItemsService } = services;
 

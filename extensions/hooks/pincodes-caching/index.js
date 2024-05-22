@@ -1,15 +1,12 @@
 // @ts-nocheck
 const axios = require('axios')
-
 module.exports = function registerHook({ filter }, { env,getSchema, services }) {
     const { ItemsService } = services
-
     const collectionNames = [
         'cibil_serviceable_pincodes',
         'pincodes',
         'Finacle_pincode_master'
     ]
-
   async function removePincodeFromCaching(collectionName, pincode) {
         await axios.post(env.CACHE_CLEARING_ENDPOINT,
             {
@@ -18,7 +15,6 @@ module.exports = function registerHook({ filter }, { env,getSchema, services }) 
             }
           )
     }
-
     filter('Pincodes_servicability.items.update', async (payload, {collection, keys}) => {
         if(keys?.length == 1) {
             const pincodeCollection = new ItemsService(collection, { schema: await getSchema() });
@@ -32,7 +28,6 @@ module.exports = function registerHook({ filter }, { env,getSchema, services }) 
             await removePincodeFromCaching(`${collection}_fkyc`)
         }
     })
-
     collectionNames.forEach((collectionName) => {
         filter(`${collectionName}.items.update`, async (payload, {collection, keys}) => {
             if(keys?.length == 1) {

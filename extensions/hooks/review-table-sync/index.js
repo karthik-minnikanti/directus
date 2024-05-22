@@ -1,6 +1,5 @@
-// @ts-nocheck
 /* eslint-disable no-prototype-builtins */
-
+// @ts-nocheck
 const systemFields = new Set(['sort', 'date_created', 'date_updated', 'user_created', 'user_updated']);
 
 const reviewTableRegex = new RegExp(/_review$/);
